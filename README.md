@@ -33,17 +33,17 @@ In any project: **`/pi init`** → profilo + proposta in chat → rispondi
 `tutto` / `minimo` / `solo 1,2,4` / `niente` → apply solo l'approvato.
 
 - `/pi refresh` — diff-only quando cambia una dipendenza
-- `/pi status` — cosa ha installato il bootstrap in questo repo
+- `/opi status` — cosa ha installato il bootstrap in questo repo
 
 ## CLI (no agent needed)
 
 ```bash
-pi detect                                  # profilo stack
-echo "# My Skill" | pi apply my-skill --source https://github.com/x/y
-pi verify                                  # drift/missing vs lock
-pi status                                  # riepilogo + budget
-pi quarantine my-skill                     # mai delete: sposta in .opencode/quarantine/
-pi budget                                  # skill vs soglia 25
+opi detect                                  # profilo stack
+echo "# My Skill" | opi apply my-skill --source https://github.com/x/y
+opi verify                                  # drift/missing vs lock
+opi status                                  # riepilogo + budget
+opi quarantine my-skill                     # mai delete: sposta in .opencode/quarantine/
+opi budget                                  # skill vs soglia 25
 ```
 
 ## What it writes (repo-scoped only, never global)
@@ -60,7 +60,7 @@ pi budget                                  # skill vs soglia 25
 ## Design (from a deep-research study, 2026-10)
 
 - **Human gate on everything**: single-prompt bootstrap is the documented anti-pattern; skills from the internet need review, not auto-install.
-- **sha1 lock**: every vendored skill is hash-locked; `pi verify` catches drift and missing files. Immutable-snapshot idea borrowed from `agent-skill-bootstrap`.
+- **sha1 lock**: every vendored skill is hash-locked; `opi verify` catches drift and missing files. Immutable-snapshot idea borrowed from `agent-skill-bootstrap`.
 - **Quarantine, not delete** (same source). Nothing disappears silently.
 - **Budget ≤25 project skills**: past that, routing misfires multiply.
 - **Never touches global config**: project-scoped by construction, everything lands in the repo and shows up in `git diff`.

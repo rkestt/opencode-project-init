@@ -4,7 +4,7 @@
   "description": "Project-scoped bootstrap for OpenCode agents: detect stack, vendor skills with sha1 lock, drift verify, quarantine, routing budget. Zero dependencies.",
   "type": "module",
   "main": "src/plugin.mjs",
-  "bin": { "pi": "bin/pi.mjs" },
+  "bin": { "opi": "bin/opi.mjs" },
   "exports": {
     ".": "./src/plugin.mjs",
     "./core": "./src/core.mjs"

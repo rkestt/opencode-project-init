@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * pi — CLI di opencode-project-init.
- * Uso: pi <comando> [args]   (esegui dalla root del repo target)
+ * opi — CLI di opencode-project-init.
+ * Uso: opi <comando> [args]   (esegui dalla root del repo target)
  *
- *   pi detect
- *   pi apply <name> --source <url> [--file <path>]
- *   pi verify
- *   pi status
- *   pi quarantine <name>
- *   pi budget
+ *   opi detect
+ *   opi apply <name> --source <url> [--file <path>]
+ *   opi verify
+ *   opi status
+ *   opi quarantine <name>
+ *   opi budget
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
