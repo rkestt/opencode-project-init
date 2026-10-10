@@ -1,6 +1,6 @@
 {
   "name": "opencode-project-init",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Project-scoped bootstrap for OpenCode agents: detect stack, vendor skills with sha1 lock, drift verify, quarantine, routing budget. Zero dependencies.",
   "type": "module",
   "main": "src/plugin.mjs",
