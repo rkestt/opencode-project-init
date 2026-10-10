@@ -36,7 +36,7 @@ test("plugin: detect su repo fittizio", async () => {
 test("plugin: apply + verify + status + quarantine end-to-end", async () => {
   const root = mkdtempSync(join(tmpdir(), "pi-plugin-"))
   const tool = await makeTool(root)
-  const out = await tool.execute({ command: "apply", name: "demo-skill", source: "https://github.com/x/y", content: "# Demo\n\nbody\n" })
+  const out = await tool.execute({ command: "apply", name: "demo-skill", source: "https://github.com/x/y", content: "# Demo\n\nbody\n", description: "Demo skill" })
   assert.match(out.output, /applied demo-skill/)
   assert.ok(existsSync(join(root, ".opencode", "skills", "demo-skill", "SKILL.md")))
 

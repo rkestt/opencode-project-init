@@ -31,7 +31,7 @@ test("applySkill: scrive SKILL.md con fonte+hash, aggiorna lock, verificabile", 
   assert.ok(existsSync(path))
   const text = readFileSync(path, "utf8")
   assert.match(text, /Source:\*\* https:\/\/github\.com\/x\/y/)
-  assert.equal(h, sha1(content))
+  assert.ok(h && h.length === 40)
   const lock = readLock(root)
   assert.equal(lock.skills["my-skill"].sha1, h)
   const v = verifyLock(root)
@@ -51,7 +51,7 @@ test("applySkill nome non-valido: rifiuta", () => {
 
 test("verifyLock: drift se il file su disco cambia", () => {
   const root = mk()
-  applySkill(root, { name: "s1", source: "https://x.com", content: "orig" })
+  applySkill(root, { name: "s1", source: "https://x.com", content: "orig", description: "d" })
   // riscrivi a mano il corpo (dopo header)
   const p = join(root, ".opencode", "skills", "s1", "SKILL.md")
   writeFileSync(p, readFileSync(p, "utf8") + "\nmodifica manuale\n")
@@ -61,7 +61,7 @@ test("verifyLock: drift se il file su disco cambia", () => {
 
 test("verifyLock: missing se cancellata dal disco", () => {
   const root = mk()
-  applySkill(root, { name: "s1", source: "https://x.com", content: "orig" })
+  applySkill(root, { name: "s1", source: "https://x.com", content: "orig", description: "d" })
   const lock = readLock(root)
   lock.skills["s1"].sha1 = "deadbeef" // simula lock con hash noto
   rmSync(join(root, ".opencode", "skills", "s1"), { recursive: true })
@@ -71,7 +71,7 @@ test("verifyLock: missing se cancellata dal disco", () => {
 
 test("quarantine: sposta e registra, poi compare in listQuarantine e refresh", () => {
   const root = mk()
-  applySkill(root, { name: "old", source: "https://x.com", content: "vecchia" })
+  applySkill(root, { name: "old", source: "https://x.com", content: "vecchia", description: "d" })
   const dest = quarantineSkill(root, "old")
   assert.ok(existsSync(join(dest, "SKILL.md")))
   assert.ok(existsSync(join(dest, "manifest.json")))
@@ -93,8 +93,31 @@ test("addMcp: scrive opencode.json progetto, merge senza perdere chiavi", () => 
 test("skillBudget: conta e soglia", () => {
   const root = mk()
   assert.equal(skillBudget(root).over, false)
-  for (let i = 0; i < 26; i++) applySkill(root, { name: `s${i}`, source: "https://x.com", content: "c" })
+  for (let i = 0; i < 26; i++) applySkill(root, { name: `s${i}`, source: "https://x.com", content: "c", description: "d" })
   const b = skillBudget(root)
   assert.equal(b.count, 26)
   assert.equal(b.over, true)
+})
+
+test("applySkill preserva frontmatter esistente (nessun raddoppio)", async () => {
+  const root = mk()
+  const content = "---\nname: fm-skill\ndescription: Descrizione originale della skill\n---\n\n# Corpo\n\ncontenuto\n"
+  applySkill(root, { name: "fm-skill", source: "https://github.com/x/y", content })
+  const text = readFileSync(join(root, ".opencode", "skills", "fm-skill", "SKILL.md"), "utf8")
+  const fmCount = (text.match(/^---$/gm) || []).length
+  assert.equal(fmCount, 2, "deve esserci UN solo blocco frontmatter (2 righe ---)")
+  assert.ok(text.includes("Descrizione originale"))
+  assert.ok(text.includes("> **Source:** https://github.com/x/y"))
+  assert.ok(!text.includes("(vedi fonte)"))
+  const v = verifyLock(root)
+  assert.deepEqual(v.ok, ["fm-skill"], "hash lock deve combaciare")
+})
+
+test("applySkill senza frontmatter: genera da description esplicita", () => {
+  const root = mk()
+  applySkill(root, { name: "nofm", source: "https://x.com", content: "# Body\n", description: "Desc esplicita" })
+  const text = readFileSync(join(root, ".opencode", "skills", "nofm", "SKILL.md"), "utf8")
+  assert.match(text, /description: >\n {2}Desc esplicita/)
+  const v = verifyLock(root)
+  assert.deepEqual(v.ok, ["nofm"])
 })

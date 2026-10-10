@@ -92,20 +92,35 @@ export function writeLock(root, lock) {
  * (agente o CLI) lo mette nella proposta prima di scrivere, cosi' il lock
  * e il disco non possono divergere.
  */
-export function applySkill(root, { name, source, content }) {
+export function applySkill(root, { name, source, content, description }) {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) throw new Error(`nome skill non valido: ${name}`)
   if (!source || !/^https?:\/\//.test(source)) throw new Error(`fonte mancante o non-URL per skill ${name}: serve almeno un URL citabile`)
+
+  // Se il content ha già frontmatter valido lo PRESERVA (mai duplicare).
+  let fm = ""
+  let body = content
+  const fmMatch = content.match(/^---\n[\s\S]*?\n---\n/)
+  if (fmMatch) {
+    fm = fmMatch[0]
+    body = content.slice(fm.length)
+    if (!/description:/.test(fm)) throw new Error(`frontmatter senza description per skill ${name}`)
+  } else {
+    let desc = description ?? ""
+    if (!desc.length || desc.length > 300) throw new Error(`description mancante o troppo lunga per skill ${name} (max 300)`)
+    fm = `---\nname: ${name}\ndescription: >\n  ${desc}\n---\n`
+  }
+
+  const hash = sha1(fm + body)
+  const fileHeader = `${fm}\n> **Source:** ${source}\n> **sha1:** ${hash}\n> **Installed by:** opencode-project-init\n\n`
   const dir = assertInside(root, join(".opencode", "skills", name))
   mkdirSync(dir, { recursive: true })
-  const header =
-    `---\nname: ${name}\ndescription: >\n  ${(content.match(/^description:.*$/m)?.[0] ?? "").replace("description:", "").trim().slice(0, 200) || "(vedi fonte)"}\n---\n\n` +
-    `> **Source:** ${source}\n> **sha1:** ${sha1(content)}\n> **Installed by:** opencode-project-init\n\n`
-  atomicWrite(join(dir, "SKILL.md"), header + content)
+  atomicWrite(join(dir, "SKILL.md"), fileHeader + body)
+
   // lock subito: disco e lock non possono divergere
   const lock = readLock(root)
-  lock.skills[name] = { source, sha1: sha1(content), installedAt: new Date().toISOString() }
+  lock.skills[name] = { source, sha1: hash, installedAt: new Date().toISOString() }
   writeLock(root, lock)
-  return { path: join(dir, "SKILL.md"), sha1: sha1(content) }
+  return { path: join(dir, "SKILL.md"), sha1: hash }
 }
 
 // ---------------------------------------------------------------- verify
@@ -122,11 +137,12 @@ export function verifyLock(root) {
   for (const [name, entry] of Object.entries(lock.skills)) {
     const sk = join(skillsDir, name, "SKILL.md")
     if (!existsSync(sk)) { res.missing.push(name); continue }
-    const current = sha1(readFileSync(sk, "utf8"))
-    const locked = entry.sha1 ?? ""
-    // l'header aggiunto da applySkill cambia il contenuto: confronta solo il corpo dopo l'header
-    const bodyHash = sha1(readFileSync(sk, "utf8").split("\n\n").slice(2).join("\n\n"))
-    if (current === locked || bodyHash === locked) res.ok.push(name)
+    // struttura file: frontmatter + header source + corpo → togli header, sha1 del resto
+    let text = readFileSync(sk, "utf8")
+    const fmM = text.match(/^---\n[\s\S]*?\n---\n/)
+    const fm = fmM ? fmM[0] : ""
+    const rest = text.slice(fm.length).replace(/^\n?> \*\*Source:\*\*.*\n(> \*\*sha1:\*\*.*\n)?(> \*\*Installed by:\*\*.*\n)?\n/, "")
+    if (sha1(fm + rest) === entry.sha1) res.ok.push(name)
     else res.drift.push(name)
   }
   res.untracked = onDisk.filter((n) => !(n in lock.skills))

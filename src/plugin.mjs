@@ -19,6 +19,7 @@ const input = z.object({
   name: z.string().optional(),
   source: z.string().optional(),
   content: z.string().optional(),
+  description: z.string().optional(),
 })
 
 const HELP = "project_init comandi: detect | apply <name> <source> [content] | verify | status | quarantine <name> | budget"
@@ -57,7 +58,7 @@ export default {
                 case "apply": {
                   const content = input.content ?? (await readStdin())
                   if (!content) throw new Error("apply richiede il contenuto della skill (args.content o stdin)")
-                  const r = applySkill(dir, { name: input.name, source: input.source, content: String(content) })
+                  const r = applySkill(dir, { name: input.name, source: input.source, content: String(content), description: input.description })
                   return `applied ${input.name} → ${r.path} (sha1 ${r.sha1.slice(0, 12)})`
                 }
                 case "verify": {
