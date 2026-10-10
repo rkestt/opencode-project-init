@@ -10,7 +10,16 @@
  * "@opencode/plugin" (verificato: "Cannot find package" nei log).
  * Firma tool verificata sul runtime: { name, description, execute }.
  */
+import { tool } from "@opencode-ai/plugin"
 import { detectStack, applySkill, verifyLock, refreshDiff, quarantineSkill, listQuarantine, skillBudget } from "./core.mjs"
+
+const z = tool.schema
+const input = z.object({
+  command: z.string().optional(),
+  name: z.string().optional(),
+  source: z.string().optional(),
+  content: z.string().optional(),
+})
 
 const HELP = "project_init comandi: detect | apply <name> <source> [content] | verify | status | quarantine <name> | budget"
 
@@ -20,8 +29,10 @@ export default {
     const root = () => ctx?.directory ?? ctx?.location?.directory ?? process.cwd()
 
     await ctx.tool.transform((tools) => {
-      tools.add({
+      tools.add(tool({
         name: "project_init",
+        input,
+        output: z.string(),
         description:
           "Deterministic core of the /pi project-init bootstrap. " +
           "Commands: detect | apply <name> <source> [content] | verify | status | quarantine <name> | budget. " +
@@ -78,9 +89,9 @@ export default {
               return `project_init ERROR: ${err?.message ?? err}\n\n${HELP}`
             }
           }
-          return await run()
+          return { output: await run() }
         },
-      })
+      }))
     })
   },
 }
