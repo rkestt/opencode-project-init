@@ -27,7 +27,7 @@ test("detectStack: deps + scripts + deploy guess", () => {
 test("applySkill: scrive SKILL.md con fonte+hash, aggiorna lock, verificabile", () => {
   const root = mk()
   const content = "# My Skill\n\nDo the thing.\n"
-  const { path, sha1: h } = applySkill(root, { name: "my-skill", source: "https://github.com/x/y", content })
+  const { path, sha1: h } = applySkill(root, { name: "my-skill", source: "https://github.com/x/y", content, description: "Do the thing skill" })
   assert.ok(existsSync(path))
   const text = readFileSync(path, "utf8")
   assert.match(text, /Source:\*\* https:\/\/github\.com\/x\/y/)
