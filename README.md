@@ -9,6 +9,8 @@ Zero dependencies. Node ≥20. Works with any model.
 ```bash
 npm i -g opencode-project-init        # or: npm i -g github:<you>/opencode-project-init
 ```
+Se l'install si blocca sugli script di `msgpackr-extract` (dip transitiva):
+`npm i -g --allow-scripts=msgpackr-extract opencode-project-init`
 
 Then register in your **global** `~/.config/opencode/opencode.jsonc`:
 
@@ -39,7 +41,7 @@ In any project: **`/pi init`** → profilo + proposta in chat → rispondi
 
 ```bash
 opi detect                                  # profilo stack
-echo "# My Skill" | opi apply my-skill --source https://github.com/x/y
+opi apply my-skill --source https://github.com/x/y --file ./SKILL.md [--description "..."]
 opi verify                                  # drift/missing vs lock
 opi status                                  # riepilogo + budget
 opi quarantine my-skill                     # mai delete: sposta in .opencode/quarantine/

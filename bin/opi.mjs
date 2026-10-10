@@ -34,12 +34,12 @@ switch (cmd) {
     const name = rest[0]
     const source = flag("source")
     if (!name || !source) {
-      console.error("uso: pi apply <name> --source <url> [--file <path>]")
+      console.error("uso: opi apply <name> --source <url> [--file <path>] [--description <desc>]")
       process.exit(1)
     }
     const file = flag("file")
     const content = file ? readFileSync(resolve(root, file), "utf8") : readFileSync(0, "utf8")
-    const r = applySkill(root, { name, source, content })
+    const r = applySkill(root, { name, source, content, description: flag("description") })
     console.log(`applied ${name} → ${r.path} (sha1 ${r.sha1.slice(0, 12)})`)
     break
   }
