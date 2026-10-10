@@ -29,33 +29,33 @@ test("plugin: detect su repo fittizio", async () => {
   writeFileSync(join(root, "README.md"), "deploy su Vercel")
   const tool = await makeTool(root)
   const out = await tool.execute({ command: "detect" })
-  assert.match(out, /next@\^15/)
-  assert.match(out, /deploy=vercel/)
+  assert.match(out.output, /next@\^15/)
+  assert.match(out.output, /deploy=vercel/)
 })
 
 test("plugin: apply + verify + status + quarantine end-to-end", async () => {
   const root = mkdtempSync(join(tmpdir(), "pi-plugin-"))
   const tool = await makeTool(root)
   const out = await tool.execute({ command: "apply", name: "demo-skill", source: "https://github.com/x/y", content: "# Demo\n\nbody\n" })
-  assert.match(out, /applied demo-skill/)
+  assert.match(out.output, /applied demo-skill/)
   assert.ok(existsSync(join(root, ".opencode", "skills", "demo-skill", "SKILL.md")))
 
   const v = await tool.execute({ command: "verify" })
-  assert.match(v, /ok=1/)
+  assert.match(v.output, /ok=1/)
 
   const s = await tool.execute({ command: "status" })
-  assert.match(s, /installed=1/)
+  assert.match(s.output, /installed=1/)
 
   const q = await tool.execute({ command: "quarantine", name: "demo-skill" })
-  assert.match(q, /quarantined demo-skill/)
+  assert.match(q.output, /quarantined demo-skill/)
   assert.ok(!existsSync(join(root, ".opencode", "skills", "demo-skill")))
   const s2 = await tool.execute({ command: "status" })
-  assert.match(s2, /quarantined=demo-skill-/)
+  assert.match(s2.output, /quarantined=demo-skill-/)
 })
 
 test("plugin: comando sconosciuto → help con lista comandi", async () => {
   const root = mkdtempSync(join(tmpdir(), "pi-plugin-"))
   const tool = await makeTool(root)
   const out = await tool.execute({ command: "boh" })
-  assert.match(out, /detect \| apply/)
+  assert.match(out.output, /detect \| apply/)
 })

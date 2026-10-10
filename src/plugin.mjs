@@ -27,55 +27,58 @@ export default {
           "Commands: detect | apply <name> <source> [content] | verify | status | quarantine <name> | budget. " +
           "All writes are repo-scoped and hash-locked; removals go to quarantine, never deleted.",
         async execute(args) {
-          try {
-            const input = typeof args === "string" ? { command: args }
-              : args?.input ?? args ?? {}
-            const cmd = String(input.command ?? "").trim()
-            const dir = root()
+          const run = async () => {
+            try {
+              const input = typeof args === "string" ? { command: args }
+                : args?.input ?? args ?? {}
+              const cmd = String(input.command ?? "").trim()
+              const dir = root()
 
-            switch (cmd) {
-              case "detect": {
-                const s = detectStack(dir)
-                return [
-                  `stack: ${Object.keys(s.deps).length} deps, lock=${s.hasLock}, deploy=${s.deployGuess ?? "n/d"}`,
-                  `scripts: ${Object.keys(s.scripts).join(", ") || "n/d"}`,
-                  `deps: ${Object.entries(s.deps).slice(0, 30).map(([k, v]) => `${k}@${v}`).join(", ")}`,
-                ].join("\n")
+              switch (cmd) {
+                case "detect": {
+                  const s = detectStack(dir)
+                  return [
+                    `stack: ${Object.keys(s.deps).length} deps, lock=${s.hasLock}, deploy=${s.deployGuess ?? "n/d"}`,
+                    `scripts: ${Object.keys(s.scripts).join(", ") || "n/d"}`,
+                    `deps: ${Object.entries(s.deps).slice(0, 30).map(([k, v]) => `${k}@${v}`).join(", ")}`,
+                  ].join("\n")
+                }
+                case "apply": {
+                  const content = input.content ?? (await readStdin())
+                  if (!content) throw new Error("apply richiede il contenuto della skill (args.content o stdin)")
+                  const r = applySkill(dir, { name: input.name, source: input.source, content: String(content) })
+                  return `applied ${input.name} → ${r.path} (sha1 ${r.sha1.slice(0, 12)})`
+                }
+                case "verify": {
+                  const v = verifyLock(dir)
+                  return `ok=${v.ok.length} drift=${v.drift.join(",") || "-"} missing=${v.missing.join(",") || "-"} untracked=${v.untracked.join(",") || "-"}`
+                }
+                case "status": {
+                  const r = refreshDiff(dir)
+                  const b = skillBudget(dir)
+                  return [
+                    `installed=${r.ok.length} drift=${r.drift.join(",") || "-"} missing=${r.missing.join(",") || "-"}`,
+                    `untracked=${r.untracked.join(",") || "-"} quarantined=${r.quarantined.join(",") || "-"}`,
+                    `mcps=${r.mcps.join(",") || "-"} budget=${b.count}/${b.max}${b.over ? " OVER" : ""}`,
+                  ].join("\n")
+                }
+                case "quarantine": {
+                  if (!input.name) throw new Error("quarantine richiede name")
+                  const dest = quarantineSkill(dir, input.name)
+                  return `quarantined ${input.name} → ${dest}`
+                }
+                case "budget": {
+                  const b = skillBudget(dir)
+                  return `skills=${b.count}/${b.max}${b.over ? " OVER BUDGET" : ""}`
+                }
+                default:
+                  return HELP
               }
-              case "apply": {
-                const content = input.content ?? (await readStdin())
-                if (!content) throw new Error("apply richiede il contenuto della skill (args.content o stdin)")
-                const r = applySkill(dir, { name: input.name, source: input.source, content: String(content) })
-                return `applied ${input.name} → ${r.path} (sha1 ${r.sha1.slice(0, 12)})`
-              }
-              case "verify": {
-                const v = verifyLock(dir)
-                return `ok=${v.ok.length} drift=${v.drift.join(",") || "-"} missing=${v.missing.join(",") || "-"} untracked=${v.untracked.join(",") || "-"}`
-              }
-              case "status": {
-                const r = refreshDiff(dir)
-                const b = skillBudget(dir)
-                return [
-                  `installed=${r.ok.length} drift=${r.drift.join(",") || "-"} missing=${r.missing.join(",") || "-"}`,
-                  `untracked=${r.untracked.join(",") || "-"} quarantined=${r.quarantined.join(",") || "-"}`,
-                  `mcps=${r.mcps.join(",") || "-"} budget=${b.count}/${b.max}${b.over ? " OVER" : ""}`,
-                ].join("\n")
-              }
-              case "quarantine": {
-                if (!input.name) throw new Error("quarantine richiede name")
-                const dest = quarantineSkill(dir, input.name)
-                return `quarantined ${input.name} → ${dest}`
-              }
-              case "budget": {
-                const b = skillBudget(dir)
-                return `skills=${b.count}/${b.max}${b.over ? " OVER BUDGET" : ""}`
-              }
-              default:
-                return HELP
+            } catch (err) {
+              return `project_init ERROR: ${err?.message ?? err}\n\n${HELP}`
             }
-          } catch (err) {
-            return `project_init ERROR: ${err?.message ?? err}\n\n${HELP}`
           }
+          return { output: await run() }
         },
       })
     })
