@@ -78,7 +78,7 @@ export default {
               return `project_init ERROR: ${err?.message ?? err}\n\n${HELP}`
             }
           }
-          return { output: await run() }
+          return await run()
         },
       })
     })
